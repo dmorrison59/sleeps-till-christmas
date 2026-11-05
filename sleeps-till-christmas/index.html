@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Sleeps Till Christmas</title>
+<meta name="description" content="Live Christmas countdown: sleeps, days, hours and seconds till Christmas, plus holiday picks.">
+<meta name="theme-color" content="#155238">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Sleeps">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta property="og:title" content="Sleeps Till Christmas">
+<meta property="og:description" content="How many sleeps till Christmas? Live countdown.">
+<meta property="og:image" content="icons/icon-512.png">
+<style>
+*,*::before,*::after{box-sizing:border-box}
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0}
+img{max-width:100%}
+[hidden]{display:none!important}
+.actions{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+.share.install{background:linear-gradient(180deg,#ff5a66,var(--red));color:var(--snow);box-shadow:0 4px 0 var(--red-dk),0 8px 18px rgba(0,0,0,.3)}
+.hint{margin:0;font-size:.9rem;color:var(--snow-dim);background:rgba(0,0,0,.22);border-radius:10px;padding:10px 14px;max-width:46ch}
+.hint b{color:var(--gold)}
+</style>
+</head>
+<body>
+
+<canvas id="snow" aria-hidden="true"></canvas>
+
+<div class="lights" aria-hidden="true">
+  <svg viewBox="0 0 1000 54" preserveAspectRatio="none"><path d="M0,10 Q62,34 125,12 T250,12 T375,12 T500,12 T625,12 T750,12 T875,12 T1000,12" fill="none" stroke="#2b3a31" stroke-width="2.5"/></svg>
+  <div class="bulbs" id="bulbs"></div>
+</div>
+
+<div class="wrap">
+  <main class="main">
+    <div>
+      <div class="eyebrow" id="year">Christmas 2026</div>
+      <h1 id="headline"><span class="n" id="sleeps">—</span> sleeps till Christmas</h1>
+      <p class="sub" id="subline">Counting down to the morning of December 25.</p>
+    </div>
+
+    <div class="clock" role="timer" aria-live="off">
+      <div class="unit"><div class="num" id="d">00</div><div class="lbl">Days</div></div>
+      <div class="unit"><div class="num" id="h">00</div><div class="lbl">Hours</div></div>
+      <div class="unit"><div class="num" id="m">00</div><div class="lbl">Minutes</div></div>
+      <div class="unit"><div class="num" id="s">00</div><div class="lbl">Seconds</div></div>
+    </div>
+
+    <div class="track">
+      <div class="track-head"><span>Santa's progress since Nov 1</span><b id="pct">0%</b></div>
+      <div class="bar"><i id="barfill"></i></div>
+    </div>
+
+    <div class="facts">
+      <div class="fact"><b id="weekends">—</b><span>shopping weekends left</span></div>
+      <div class="fact"><b id="ship">—</b><span>days to order for standard shipping (Dec 15)</span></div>
+      <div class="fact"><b id="weekday">—</b><span>Christmas falls on</span></div>
+    </div>
+
+    <div class="actions">
+      <button class="share" id="share" type="button">🎁 Copy countdown to share</button>
+      <button class="share install" id="install" type="button" hidden>📲 Add to home screen</button>
+    </div>
+    <p class="hint" id="installHint" hidden></p>
+  </main>
+
+  <aside class="deals" aria-label="Holiday deals">
+    <div class="deals-head"><h2>Holiday Picks</h2><span class="tag">Sponsored</span></div>
+    <div class="deal" id="deal"></div>
+    <div class="dots" id="dots"></div>
+    <p class="disclose">Example products. I may earn a commission or sale from links here.</p>
+  </aside>
+</div>
+<footer><span class="holly" aria-hidden="true">🎄</span>Made for the holidays · Times use your device's clock</footer>
+
+<script>
+/* ===== Edit your products here ===== */
+const DEALS = [
+  {emoji:"🚗", bg:"#cfe3e8", title:"Cordless Car Vacuum", text:"Strong suction, USB-C charging. Clears crumbs from seats and floor mats in minutes.", price:"$39.99", was:"$59.99", url:"https://example.com/car-vacuum", cta:"Buy now"},
+  {emoji:"🎄", bg:"#d8ead2", title:"Pre-lit Tabletop Tree", text:"18-inch tree with warm LEDs and a timer. Fits a desk, counter or nightstand.", price:"$24.99", was:"", url:"https://example.com/tabletop-tree", cta:"See it"},
+  {emoji:"🧤", bg:"#f3d9d4", title:"Heated Touchscreen Gloves", text:"Three heat settings, rechargeable. A stocking stuffer for anyone who scrapes windshields.", price:"$29.99", was:"$44.99", url:"https://example.com/heated-gloves", cta:"Buy now"},
+  {emoji:"☕", bg:"#f1e3c4", title:"Insulated Travel Mug", text:"Keeps coffee hot for 6 hours and fits standard cup holders.", price:"$19.99", was:"", url:"https://example.com/travel-mug", cta:"See it"}
+];
+const ROTATE_MS = 7000;
+const $ = id => document.getElementById(id);
+
+/* ===== String lights ===== */
+(function(){
+  const colors = ["#ff3b4a","#ffd23f","#2ee87a","#3fa9ff","#ff8a3d"];
+  const n = Math.max(10, Math.min(24, Math.floor(innerWidth/48)));
+  for (let i=0;i<n;i++){
+    const b=document.createElement("span"); b.className="bulb";
+    b.style.setProperty("--c", colors[i%colors.length]);
+    b.style.setProperty("--d", (Math.random()*2.4).toFixed(2)+"s");
+    $("bulbs").appendChild(b);
+  }
+})();
+
+/* ===== Countdown ===== */
+const pad = n => String(n).padStart(2,"0");
+function target(now){
+  const end = new Date(now.getFullYear(), 11, 26);
+  return now >= end ? new Date(now.getFullYear()+1, 11, 25) : new Date(now.getFullYear(), 11, 25);
+}
+function weekendsLeft(now, t){
+  let c = 0, d = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  while (d < t){ if (d.getDay()===6) c++; d.setDate(d.getDate()+1); }
+  if (now.getDay()===0) c++;
+  return c;
+}
+let shareText = "";
+function tick(){
+  const now = new Date(), t = target(now);
+  $("year").textContent = "Christmas " + t.getFullYear();
+  $("weekday").textContent = t.toLocaleDateString(undefined,{weekday:"long"});
+  if (now.getMonth()===11 && now.getDate()===25){
+    $("headline").innerHTML = 'Merry <span class="n">Christmas!</span>';
+    $("subline").textContent = "It's here. Enjoy the day.";
+    ["d","h","m","s"].forEach(k=>$(k).textContent="00");
+    $("pct").textContent="100%"; $("barfill").style.width="100%";
+    $("weekends").textContent="0"; $("ship").textContent="—";
+    shareText = "Merry Christmas! 🎄"; return;
+  }
+  const diff = t - now;
+  const d = Math.floor(diff/864e5), h = Math.floor(diff/36e5)%24, m = Math.floor(diff/6e4)%60, s = Math.floor(diff/1e3)%60;
+  $("d").textContent = pad(d); $("h").textContent = pad(h); $("m").textContent = pad(m); $("s").textContent = pad(s);
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const sleeps = Math.round((t - today)/864e5);
+  $("sleeps").textContent = sleeps;
+  $("headline").lastChild.textContent = sleeps===1 ? " sleep till Christmas" : " sleeps till Christmas";
+  const start = new Date(t.getFullYear(), 10, 1);
+  const pct = Math.max(0, Math.min(100, (now-start)/(t-start)*100));
+  $("pct").textContent = Math.round(pct) + "%"; $("barfill").style.width = Math.max(pct,3).toFixed(1)+"%";
+  $("weekends").textContent = weekendsLeft(now, t);
+  const ship = Math.ceil((new Date(t.getFullYear(),11,15) - today)/864e5);
+  $("ship").textContent = ship > 0 ? ship : "Passed";
+  shareText = `🎄 ${sleeps} sleeps till Christmas! (${d}d ${h}h ${m}m to go)`;
+}
+tick(); setInterval(tick, 1000);
+
+$("share").addEventListener("click", async e=>{
+  const b = e.currentTarget;
+  try { await navigator.clipboard.writeText(shareText); b.textContent = "✅ Copied!"; }
+  catch { b.textContent = shareText; }
+  setTimeout(()=> b.textContent = "🎁 Copy countdown to share", 2500);
+});
+
+/* ===== Rotating deal ===== */
+let idx = 0, timer;
+const dealEl = $("deal"), dotsEl = $("dots");
+DEALS.forEach((_,i)=>{
+  const b = document.createElement("button"); b.type="button"; b.id="dot"+i;
+  b.setAttribute("aria-label","Show item "+(i+1));
+  b.onclick = ()=>{ show(i); restart(); }; dotsEl.appendChild(b);
+});
+function show(i){
+  idx = (i + DEALS.length) % DEALS.length; const p = DEALS[idx];
+  dealEl.innerHTML = `
+    <div class="art" style="--bg:${p.bg}" aria-hidden="true"><span>${p.emoji}</span></div>
+    <div class="deal-body">
+      <h3>${p.title}</h3><p>${p.text}</p>
+      <div class="row"><span class="price">${p.price}${p.was?`<s>${p.was}</s>`:""}</span>
+      <a href="${p.url}" target="_blank" rel="noopener sponsored">${p.cta}</a></div>
+    </div>`;
+  dealEl.classList.remove("fade"); void dealEl.offsetWidth; dealEl.classList.add("fade");
+  [...dotsEl.children].forEach((b,j)=>b.setAttribute("aria-current", j===idx));
+}
+function restart(){ clearInterval(timer); timer = setInterval(()=>show(idx+1), ROTATE_MS); }
+dealEl.addEventListener("mouseenter", ()=>clearInterval(timer));
+dealEl.addEventListener("mouseleave", restart);
+show(0); restart();
+
+/* ===== Snow ===== */
+(function(){
+  if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  const c = $("snow"), x = c.getContext("2d"); let W,H,flakes=[];
+  function size(){ W=c.width=innerWidth; H=c.height=innerHeight;
+    flakes = Array.from({length:Math.min(140, Math.floor(W/9))},()=>({x:Math.random()*W,y:Math.random()*H,r:Math.random()*2.4+.7,v:Math.random()*.7+.3,w:Math.random()*Math.PI*2})); }
+  size(); addEventListener("resize", size);
+  (function draw(){
+    x.clearRect(0,0,W,H); x.fillStyle="rgba(255,255,255,.85)";
+    for(const f of flakes){ f.y+=f.v; f.w+=.01; f.x+=Math.sin(f.w)*.35;
+      if(f.y>H){f.y=-4;f.x=Math.random()*W}
+      x.beginPath(); x.arc(f.x,f.y,f.r,0,Math.PI*2); x.fill(); }
+    requestAnimationFrame(draw);
+  })();
+})();
+</script>
+
+<script>
+/* ===== Install as app ===== */
+(function(){
+  const btn = document.getElementById("install"), hint = document.getElementById("installHint");
+  const standalone = matchMedia("(display-mode: standalone)").matches || navigator.standalone;
+  if (standalone) return;
+  const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform==="MacIntel" && navigator.maxTouchPoints>1);
+  let deferred = null;
+  addEventListener("beforeinstallprompt", e => { e.preventDefault(); deferred = e; btn.hidden = false; });
+  addEventListener("appinstalled", () => { btn.hidden = true; hint.hidden = true; });
+  if (isIOS){ btn.hidden = false; }
+  btn.addEventListener("click", async () => {
+    if (deferred){ deferred.prompt(); await deferred.userChoice; deferred = null; btn.hidden = true; return; }
+    hint.innerHTML = isIOS
+      ? 'In Safari, tap the <b>Share</b> button, then <b>Add to Home Screen</b>.'
+      : 'Open your browser menu (⋮) and choose <b>Install app</b> or <b>Add to Home screen</b>.';
+    hint.hidden = false;
+  });
+  if ("serviceWorker" in navigator) addEventListener("load", () => navigator.serviceWorker.register("sw.js"));
+})();
+</script>
+</body>
+</html>
