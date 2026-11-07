@@ -208,14 +208,16 @@ img{max-width:100%}
 <script>
 /* ===== Edit your products here ===== */
 /* tag: label shown at the top ("Sponsored" for affiliate links, "From the maker" for your own).
-   url: where the button goes. androidUrl (optional): used instead on Android phones.
+   url: where the button goes. androidUrl / iosUrl (optional): used instead on Android / iPhone.
    action:"share" makes the button copy this site's link instead of opening a page. */
 const isAndroid = /android/i.test(navigator.userAgent);
+const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform==="MacIntel" && navigator.maxTouchPoints>1);
 const DEALS = [
   {emoji:"🔧", bg:"#dbe4ef", tag:"From the maker", title:"MechanicMate: Parts Locator",
    text:"Find the right part for any vehicle by year, make, model or VIN, then compare prices at AutoZone, O'Reilly and Amazon. A free gift for the car person in your family.",
    price:"Free", was:"", url:"https://mechanicmate.site/", androidUrl:"https://play.google.com/store/apps/details?id=com.mechanicmate.app",
-   cta:isAndroid ? "Get it on Google Play" : "See the app"},
+   iosUrl:"https://apps.apple.com/app/mechanicmate-parts-locator/id6811711384",
+   cta:isAndroid ? "Get it on Google Play" : isIOS ? "Get it on the App Store" : "See the app"},
   {emoji:"🎅", bg:"#f3d9d4", tag:"Share", title:"Send the countdown to family",
    text:"Kids love checking how many sleeps are left. Send them the link and they can add it to their home screen.",
    price:"", was:"", action:"share", cta:"Copy link"}
@@ -295,7 +297,7 @@ DEALS.forEach((_,i)=>{
 });
 function show(i){
   idx = (i + DEALS.length) % DEALS.length; const p = DEALS[idx];
-  const href = (isAndroid && p.androidUrl) || p.url;
+  const href = (isAndroid && p.androidUrl) || (isIOS && p.iosUrl) || p.url;
   const btn = p.action === "share"
     ? `<a href="${SITE_URL}" id="dealShare">${p.cta}</a>`
     : `<a href="${href}" target="_blank" rel="noopener sponsored">${p.cta}</a>`;
