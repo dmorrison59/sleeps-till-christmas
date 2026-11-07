@@ -197,22 +197,30 @@ img{max-width:100%}
   </main>
 
   <aside class="deals" aria-label="Holiday deals">
-    <div class="deals-head"><h2>Holiday Picks</h2><span class="tag">Sponsored</span></div>
+    <div class="deals-head"><h2>Holiday Picks</h2><span class="tag" id="dealTag">Featured</span></div>
     <div class="deal" id="deal"></div>
     <div class="dots" id="dots"></div>
-    <p class="disclose">Example products. I may earn a commission or sale from links here.</p>
+    <p class="disclose">Picks may include my own apps and products, and affiliate links that earn me a commission.</p>
   </aside>
 </div>
 <footer><span class="holly" aria-hidden="true">🎄</span>Made for the holidays · Times use your device's clock</footer>
 
 <script>
 /* ===== Edit your products here ===== */
+/* tag: label shown at the top ("Sponsored" for affiliate links, "From the maker" for your own).
+   url: where the button goes. androidUrl (optional): used instead on Android phones.
+   action:"share" makes the button copy this site's link instead of opening a page. */
+const isAndroid = /android/i.test(navigator.userAgent);
 const DEALS = [
-  {emoji:"🚗", bg:"#cfe3e8", title:"Cordless Car Vacuum", text:"Strong suction, USB-C charging. Clears crumbs from seats and floor mats in minutes.", price:"$39.99", was:"$59.99", url:"https://example.com/car-vacuum", cta:"Buy now"},
-  {emoji:"🎄", bg:"#d8ead2", title:"Pre-lit Tabletop Tree", text:"18-inch tree with warm LEDs and a timer. Fits a desk, counter or nightstand.", price:"$24.99", was:"", url:"https://example.com/tabletop-tree", cta:"See it"},
-  {emoji:"🧤", bg:"#f3d9d4", title:"Heated Touchscreen Gloves", text:"Three heat settings, rechargeable. A stocking stuffer for anyone who scrapes windshields.", price:"$29.99", was:"$44.99", url:"https://example.com/heated-gloves", cta:"Buy now"},
-  {emoji:"☕", bg:"#f1e3c4", title:"Insulated Travel Mug", text:"Keeps coffee hot for 6 hours and fits standard cup holders.", price:"$19.99", was:"", url:"https://example.com/travel-mug", cta:"See it"}
+  {emoji:"🔧", bg:"#dbe4ef", tag:"From the maker", title:"MechanicMate: Parts Locator",
+   text:"Find the right part for any vehicle by year, make, model or VIN, then compare prices at AutoZone, O'Reilly and Amazon. A free gift for the car person in your family.",
+   price:"Free", was:"", url:"https://mechanicmate.site/", androidUrl:"https://play.google.com/store/apps/details?id=com.mechanicmate.app",
+   cta:isAndroid ? "Get it on Google Play" : "See the app"},
+  {emoji:"🎅", bg:"#f3d9d4", tag:"Share", title:"Send the countdown to family",
+   text:"Kids love checking how many sleeps are left. Send them the link and they can add it to their home screen.",
+   price:"", was:"", action:"share", cta:"Copy link"}
 ];
+const SITE_URL = "https://dmorrison59.github.io/sleeps-till-christmas/";
 const ROTATE_MS = 7000;
 const $ = id => document.getElementById(id);
 
@@ -287,17 +295,29 @@ DEALS.forEach((_,i)=>{
 });
 function show(i){
   idx = (i + DEALS.length) % DEALS.length; const p = DEALS[idx];
+  const href = (isAndroid && p.androidUrl) || p.url;
+  const btn = p.action === "share"
+    ? `<a href="${SITE_URL}" id="dealShare">${p.cta}</a>`
+    : `<a href="${href}" target="_blank" rel="noopener sponsored">${p.cta}</a>`;
   dealEl.innerHTML = `
     <div class="art" style="--bg:${p.bg}" aria-hidden="true"><span>${p.emoji}</span></div>
     <div class="deal-body">
       <h3>${p.title}</h3><p>${p.text}</p>
-      <div class="row"><span class="price">${p.price}${p.was?`<s>${p.was}</s>`:""}</span>
-      <a href="${p.url}" target="_blank" rel="noopener sponsored">${p.cta}</a></div>
+      <div class="row"><span class="price">${p.price}${p.was?`<s>${p.was}</s>`:""}</span>${btn}</div>
     </div>`;
+  $("dealTag").textContent = p.tag || "Featured";
+  const sh = $("dealShare");
+  if (sh) sh.addEventListener("click", async ev => {
+    ev.preventDefault();
+    try { await navigator.clipboard.writeText(SITE_URL); sh.textContent = "Link copied!"; }
+    catch { sh.textContent = SITE_URL; }
+    setTimeout(()=> sh.textContent = p.cta, 2500);
+  });
   dealEl.classList.remove("fade"); void dealEl.offsetWidth; dealEl.classList.add("fade");
   [...dotsEl.children].forEach((b,j)=>b.setAttribute("aria-current", j===idx));
 }
-function restart(){ clearInterval(timer); timer = setInterval(()=>show(idx+1), ROTATE_MS); }
+dotsEl.hidden = DEALS.length < 2;
+function restart(){ clearInterval(timer); if (DEALS.length > 1) timer = setInterval(()=>show(idx+1), ROTATE_MS); }
 dealEl.addEventListener("mouseenter", ()=>clearInterval(timer));
 dealEl.addEventListener("mouseleave", restart);
 show(0); restart();
