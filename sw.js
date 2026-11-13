@@ -1,6 +1,6 @@
 // Bump this version every time you change index.html (e.g. new deals),
 // so phones pick up the update.
-const CACHE = "sleeps-v11";
+const CACHE = "sleeps-v12";
 const APP = [
   "./",
   "./index.html",
