@@ -1,6 +1,6 @@
 // Bump this version every time you change index.html (e.g. new deals),
 // so phones pick up the update.
-const CACHE = "sleeps-v12";
+const CACHE = "sleeps-v13";
 const APP = [
   "./",
   "./index.html",
@@ -30,6 +30,8 @@ self.addEventListener("fetch", e => {
   const req = e.request;
   if (req.method !== "GET") return;
   const url = new URL(req.url);
+  // Let videos stream straight from the network (cached copies break playback on iPhone).
+  if (/\.(mp4|webm)$/.test(url.pathname)) return;
 
   // The page itself: try the network first so new deals show up, fall back to cache offline.
   if (req.mode === "navigate") {
