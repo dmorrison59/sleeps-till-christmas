@@ -1,6 +1,6 @@
 // Bump this version every time you change index.html (e.g. new deals),
 // so phones pick up the update.
-const CACHE = "sleeps-v8";
+const CACHE = "sleeps-v9";
 const APP = [
   "./",
   "./index.html",
@@ -8,7 +8,8 @@ const APP = [
   "./icons/icon-192.png",
   "./icons/icon-512.png",
   "./icons/apple-touch-icon.png",
-  "./icons/favicon-32.png"
+  "./icons/favicon-32.png",
+  "./img/gift-tower.jpg"
 ];
 
 self.addEventListener("install", e => {
